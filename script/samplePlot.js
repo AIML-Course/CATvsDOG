@@ -110,6 +110,8 @@ function dashboard1(id, fData) {
                 return [v.State,v.freq[d.data.type]];}),segColor(d.data.type));
             hGR.update(fData.map(function(v){ 
                 return [v.State,v.rate[d.data.type]];}),segColor(d.data.type));
+            hGC.update(fData.map(function(v){ 
+                return [v.State,v.count[d.data.type]];}),segColor(d.data.type));
         }
         //Utility function to be called on mouseout a pie slice.
         function mouseout(d){
@@ -117,6 +119,8 @@ function dashboard1(id, fData) {
             hGW.update(fData.map(function(v){
                 return [v.State,v.total];}), barColor);
             hGR.update(fData.map(function(v){
+                return [v.State,v.total];}), barColor);
+            hGC.update(fData.map(function(v){
                 return [v.State,v.total];}), barColor);
         }
         // Animating the pie-slice requiring a custom function which specifies
@@ -171,9 +175,11 @@ function dashboard1(id, fData) {
     var pC = pieChart(tF), // create the pie-chart.
         leg= legend(tF),  // create the legend.
         br1 = br(),
-        hGW = histoGram(sF, "Unit Count"), // create the histogram.
+        hGW = histoGram(sF, "Unit WinCount"), // create the histogram.
         br2 = br(),
         hGR = histoGram(sF, "Unit WinRate"); // create the histogram.
+        br3 = br(),
+        hGC = histoGram(sF, "Unit TotalCount"); // create the histogram.
 }
 var groupBy = function(xs, key) {
   return xs.reduce((rv, x) => {
@@ -205,6 +211,14 @@ function form1(tempData) {
                     "dog": tmp.filter(obj =>
                         obj.catdog == "dog").reduce((a, b) =>
                         a + b.win / b.cnt, 0.0)
+                },
+                "count": {
+                    "cat": tmp.filter(obj =>
+                        obj.catdog == "cat").reduce((a, b) =>
+                        a + b.cnt, 0),
+                    "dog": tmp.filter(obj =>
+                        obj.catdog == "dog").reduce((a, b) =>
+                        a + b.cnt, 0)
                 }
             })
         }
