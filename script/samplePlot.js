@@ -4,11 +4,15 @@ function dashboard1(id, fData) {
     // compute total for each state.
     fData.forEach(function(d){d.total=0;});
     // function to handle histogram.
-    function histoGram(fD){
+    function br() {
+        d3.select(id).append("br");
+    }
+    function histoGram(fD, hGTitle){
         var hG = {}, hGDim = {t: 60, r: 0, b: 30, l: 0};
-        hGDim.w = 500 - hGDim.l - hGDim.r, 
-        hGDim.h = 300 - hGDim.t - hGDim.b;
+        hGDim.w = 800 - hGDim.l - hGDim.r, 
+        hGDim.h = 200 - hGDim.t - hGDim.b;
         //create svg for histogram.
+        d3.select(id).append("h1").text(hGTitle).append("br");
         var hGsvg = d3.select(id).append("svg")
             .attr("width", hGDim.w + hGDim.l + hGDim.r)
             .attr("height", hGDim.h + hGDim.t + hGDim.b).append("g")
@@ -70,7 +74,7 @@ function dashboard1(id, fData) {
                 .attr("fill", color);
             // transition the frequency labels location and change value.
             bars.select("text").transition().duration(500)
-                .text(function(d){ return d3.format(",")(d[1])})
+                .text(function(d){ return d3.format(",")(d[1]).substr(0,3)})
                 .attr("y", function(d) {return y(d[1])-5; });            
         }        
         return hG;
@@ -81,6 +85,7 @@ function dashboard1(id, fData) {
         var pC ={},    pieDim ={w:250, h: 250};
         pieDim.r = Math.min(pieDim.w, pieDim.h) / 2;
         // create svg for pie chart.
+        d3.select(id).append("h1").text("Cat vs Dog PieChart").append("br");
         var piesvg = d3.select(id).append("svg")
             .attr("width", pieDim.w).attr("height", pieDim.h).append("g")
             .attr("transform", "translate("+pieDim.w/2+","+pieDim.h/2+")");
@@ -101,13 +106,17 @@ function dashboard1(id, fData) {
         // Utility function to be called on mouseover a pie slice.
         function mouseover(d){
             // call the update function of histogram with new data.
-            hG.update(fData.map(function(v){ 
+            hGW.update(fData.map(function(v){ 
                 return [v.State,v.freq[d.data.type]];}),segColor(d.data.type));
+            hGR.update(fData.map(function(v){ 
+                return [v.State,v.rate[d.data.type]];}),segColor(d.data.type));
         }
         //Utility function to be called on mouseout a pie slice.
         function mouseout(d){
             // call the update function of histogram with all data.
-            hG.update(fData.map(function(v){
+            hGW.update(fData.map(function(v){
+                return [v.State,v.total];}), barColor);
+            hGR.update(fData.map(function(v){
                 return [v.State,v.total];}), barColor);
         }
         // Animating the pie-slice requiring a custom function which specifies
@@ -158,10 +167,13 @@ function dashboard1(id, fData) {
         return {type:d, freq: d3.sum(fData.map(function(t){ return t.freq[d];}))}; 
     });
     // calculate total frequency by state for all segment.
-    var sF = fData.map(function(d){return [d.State,d.total];});
-    var hG = histoGram(sF), // create the histogram.
-        pC = pieChart(tF), // create the pie-chart.
-        leg= legend(tF);  // create the legend.
+    var sF = fData.map(function(d){return [d.State, d.total];});
+    var pC = pieChart(tF), // create the pie-chart.
+        leg= legend(tF),  // create the legend.
+        br1 = br(),
+        hGW = histoGram(sF, "Unit Count"), // create the histogram.
+        br2 = br(),
+        hGR = histoGram(sF, "Unit WinRate"); // create the histogram.
 }
 var groupBy = function(xs, key) {
   return xs.reduce((rv, x) => {
@@ -185,6 +197,14 @@ function form1(tempData) {
                     "dog": tmp.filter(obj =>
                         obj.catdog == "dog").reduce((a, b) =>
                         a + b.win, 0)
+                },
+                "rate": {
+                    "cat": tmp.filter(obj =>
+                        obj.catdog == "cat").reduce((a, b) =>
+                        a + b.win / b.cnt, 0.0),
+                    "dog": tmp.filter(obj =>
+                        obj.catdog == "dog").reduce((a, b) =>
+                        a + b.win / b.cnt, 0.0)
                 }
             })
         }
@@ -193,53 +213,12 @@ function form1(tempData) {
     return arr;
 }
 
-function dashboard2(id, fData, barColor) {
-    var svgWidth = window.innerWidth - 100 * 2;
-    // var svgHeight = window.innerHeight / 3;
-    var svgHeight = 300;
-
-    var svg = d3.select(id).append("svg")
-        .attr("width", svgWidth)
-        .attr("height", svgHeight)
-        .attr("class", "bar-chart");
-    var dataset = fData.map(o => o.value).sort((a, b) => b - a);
-    console.log(dataset);
-    var barPadding = 1;
-    var barWidth = (svgWidth / dataset.length);
-
-    var barChart = svg.selectAll("rect")
-        .data(dataset)
-        .enter()
-        .append("rect")
-        .attr("y", function(d) {
-            return svgHeight - d * svgHeight
-        })
-        .attr("height", function(d) {
-            return d * svgHeight;
-        })
-        .attr("width", barWidth - barPadding)
-        .attr("transform", function (d, i) {
-             var translate = [barWidth * i, 0];
-             return "translate("+ translate +")";
-        })
-        .attr("fill", barColor);
-}
-function form2(tempData) {
-    return tempData.map(o => {
-        o.name = o.id;
-        o.value = o.win / o.cnt;
-        return o;
-    });
-}
-
 var req = new XMLHttpRequest();
 req.open('GET', 'https://t66c0e5zv9.execute-api.ap-northeast-1.amazonaws.com/default/getCatDogResult', true);
 req.onload = function() {
     if(this.status >= 200 && this.status < 400) {
         var tempData = JSON.parse(this.response);
         dashboard1('#dashboard1', form1(tempData));
-        dashboard2('#dashboard2', form2(tempData.filter(o => o.catdog == "cat")), "#807dba");
-        dashboard2('#dashboard3', form2(tempData.filter(o => o.catdog == "dog")), "#e08214");
     } else {
         console.log("ERROR: Return");
     }
